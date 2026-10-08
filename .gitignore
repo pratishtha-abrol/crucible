@@ -1,0 +1,18 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# model weights (large; fetched by `make model`)
+models/
+
+# build output
+/bin/
+*.test
+*.out
+coverage.*
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
