@@ -1,0 +1,33 @@
+# Local stack. M0: the model server only. Later milestones add gateway,
+# postgres, redis, prometheus and grafana to this file.
+services:
+  llama:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    # Flag and value are separate list items on purpose: llama.cpp rewrites
+    # "_" to "-" inside "--flag=value" tokens, which corrupts file names.
+    command:
+      - --model
+      - /models/${MODEL_FILE:-qwen2.5-1.5b-instruct-q4_k_m.gguf}
+      - --alias
+      - ${MODEL_ALIAS:-qwen2.5-1.5b}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --ctx-size                          # total KV-cache budget, split across slots
+      - "${LLAMA_CTX:-8192}"
+      - --parallel                          # concurrent sequences (slots)
+      - "${LLAMA_SLOTS:-4}"
+      - --threads                           # CPU threads used for decoding
+      - "${LLAMA_THREADS:-6}"
+    ports:
+      - "8081:8080"                         # host 8081 -> llama.cpp (gateway will own 8080)
+    volumes:
+      - ${MODEL_DIR:-../../models}:/models:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
